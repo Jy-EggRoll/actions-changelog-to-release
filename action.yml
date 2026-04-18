@@ -49,38 +49,30 @@ inputs:
 outputs:
   content:
     description: 'Generated release notes content'
-    value: ${{ steps.generate.outputs.content }}
+    value: ${{ steps.release.outputs.content }}
 
 runs:
   using: composite
   steps:
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v4
       with:
-        python-version: '3.11'
-    - id: generate
+        fetch-depth: 1
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - id: release
       name: Generate release notes
       shell: bash
-      run: |
-        python3 -c "
-        import subprocess
-        import os
-
-        result = subprocess.run(
-          ['python3', '${{ github.action_path }}/entrypoint.py',
-            '--version', '${{ inputs.version }}',
-            '--previous-tag', '${{ inputs.previous_tag }}',
-            '--changelog-path', '${{ inputs.changelog_path }}',
-            '--repo', '${{ inputs.repo }}',
-            '--binary-name', '${{ inputs.binary_name }}',
-            '--include-download-table', '${{ inputs.include_download_table }}',
-            '--platforms', '${{ inputs.platforms }}',
-            '--architectures', '${{ inputs.architectures }}',
-            '--include-changelog', '${{ inputs.include_changelog }}',
-            '--include-commits', '${{ inputs.include_commits }}',
-            '--include-install-guide', '${{ inputs.include_install_guide }}'],
-          capture_output=True, text=True
-        )
-        print(f'content={result.stdout}', file=open(os.environ['GITHUB_OUTPUT'], 'a'))
-        if result.stderr:
-          print(result.stderr, file=sys.stderr)
-        "
+      run: node ${{ github.action_path }}/index.js
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_PREVIOUS_TAG: ${{ inputs.previous_tag }}
+        INPUT_CHANGELOG_PATH: ${{ inputs.changelog_path }}
+        INPUT_REPO: ${{ inputs.repo }}
+        INPUT_BINARY_NAME: ${{ inputs.binary_name }}
+        INPUT_INCLUDE_DOWNLOAD_TABLE: ${{ inputs.include_download_table }}
+        INPUT_PLATFORMS: ${{ inputs.platforms }}
+        INPUT_ARCHITECTURES: ${{ inputs.architectures }}
+        INPUT_INCLUDE_CHANGELOG: ${{ inputs.include_changelog }}
+        INPUT_INCLUDE_COMMITS: ${{ inputs.include_commits }}
+        INPUT_INCLUDE_INSTALL_GUIDE: ${{ inputs.include_install_guide }}
