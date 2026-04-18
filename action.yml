@@ -1,0 +1,65 @@
+name: 'Changelog to Release'
+description: 'Generate release notes from CHANGELOG.md with download tables and commit history'
+author: 'EggRoll'
+
+inputs:
+  version:
+    description: 'Current release version'
+    required: true
+  previous_tag:
+    description: 'Previous version tag for commit range'
+    required: false
+    default: ''
+  changelog_path:
+    description: 'Path to CHANGELOG file'
+    required: false
+    default: 'CHANGELOG.md'
+  repo:
+    description: 'Repository name (owner/repo)'
+    required: true
+  binary_name:
+    description: 'Binary file name'
+    required: false
+    default: 'app'
+  include_download_table:
+    description: 'Include download table in release notes'
+    required: false
+    default: 'true'
+  platforms:
+    description: 'Comma-separated list of platforms (linux,darwin,windows,freebsd)'
+    required: false
+    default: 'linux,darwin,windows,freebsd'
+  include_changelog:
+    description: 'Include changelog content in release notes'
+    required: false
+    default: 'true'
+  include_commits:
+    description: 'Include commit history in release notes'
+    required: false
+    default: 'true'
+  include_install_guide:
+    description: 'Include installation guide at the end'
+    required: false
+    default: 'true'
+
+outputs:
+  content:
+    description: 'Generated release notes content'
+    runs:
+      using: 'composite'
+      steps:
+        - shell: bash
+          run: |
+            echo "content=$(
+              ${{ github.action_path }}/entrypoint.sh \
+                --version '${{ inputs.version }}' \
+                --previous-tag '${{ inputs.previous_tag }}' \
+                --changelog-path '${{ inputs.changelog_path }}' \
+                --repo '${{ inputs.repo }}' \
+                --binary-name '${{ inputs.binary_name }}' \
+                --include-download-table '${{ inputs.include_download_table }}' \
+                --platforms '${{ inputs.platforms }}' \
+                --include-changelog '${{ inputs.include_changelog }}' \
+                --include-commits '${{ inputs.include_commits }}' \
+                --include-install-guide '${{ inputs.include_install_guide }}'
+            )" >> $GITHUB_OUTPUT
