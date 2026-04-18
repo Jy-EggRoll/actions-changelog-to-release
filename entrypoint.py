@@ -15,101 +15,64 @@ def parse_args():
     parser.add_argument("--binary-name", default="app")
     parser.add_argument("--include-download-table", default="true")
     parser.add_argument("--platforms", default="linux,darwin,windows,freebsd")
+    parser.add_argument("--architectures", default="386,amd64,arm,arm64")
     parser.add_argument("--include-changelog", default="true")
     parser.add_argument("--include-commits", default="true")
     parser.add_argument("--include-install-guide", default="true")
     return parser.parse_args()
 
 
-def generate_download_table(repo, version, binary_name, platforms):
-    platforms = [p.strip() for p in platforms.split(",")]
+ARCH_LABELS = {
+    "386": "x86 (32位)",
+    "amd64": "x64 (64位)",
+    "arm": "ARM (armv7)",
+    "arm64": "ARM64",
+}
 
-    cols = []
+WINDOWS_EXTS = {
+    "386": ".exe",
+    "amd64": ".exe",
+    "arm": ".exe",
+    "arm64": ".exe",
+}
+
+
+def generate_download_table(repo, version, binary_name, platforms, architectures):
+    platforms = [p.strip() for p in platforms.split(",")]
+    architectures = [a.strip() for a in architectures.split(",")]
+
+    platform_cols = []
     has_windows = "windows" in platforms
     has_linux = "linux" in platforms
     has_darwin = "darwin" in platforms
     has_freebsd = "freebsd" in platforms
 
     if has_windows:
-        cols.append("Windows")
+        platform_cols.append("Windows")
     if has_linux:
-        cols.append("Linux")
+        platform_cols.append("Linux")
     if has_darwin:
-        cols.append("macOS")
+        platform_cols.append("macOS")
     if has_freebsd:
-        cols.append("FreeBSD")
-
-    win_ext = ".exe" if has_windows else ""
+        platform_cols.append("FreeBSD")
 
     lines = []
-    lines.append("| 架构 | " + " | ".join(cols) + " |")
-    lines.append("|" + "|".join(["------"] * (len(cols) + 1)) + "|")
-
-    def cell(w, l, d, f):
-        parts = []
-        if has_windows and w:
-            parts.append(f"[w]({w})")
-        else:
-            parts.append("")
-        if has_linux and l:
-            parts.append(f"[l]({l})")
-        else:
-            parts.append("")
-        if has_darwin and d:
-            parts.append(f"[d]({d})")
-        else:
-            parts.append("")
-        if has_freebsd and f:
-            parts.append(f"[f]({f})")
-        else:
-            parts.append("")
-        return " | ".join(("不支持" if not p else p) for p in parts)
+    lines.append("| 架构 | " + " | ".join(platform_cols) + " |")
+    lines.append("|" + "|".join(["------"] * (len(platform_cols) + 1)) + "|")
 
     base = f"https://github.com/{repo}/releases/download/{version}/{binary_name}"
 
-    x86_row = "| **x86 (32位)** | "
-    if has_windows:
-        x86_row += f"[x86]({base}-windows-386{win_ext}) | "
-    if has_linux:
-        x86_row += f"[x86]({base}-linux-386) | "
-    if has_darwin:
-        x86_row += "不支持 | "
-    if has_freebsd:
-        x86_row += "不支持 |"
-    lines.append(x86_row.rstrip(" |"))
+    for arch in architectures:
+        label = ARCH_LABELS.get(arch, arch)
+        row = f"| **{label}** |"
 
-    x64_row = "| **x64 (64位)** | "
-    if has_windows:
-        x64_row += f"[x64]({base}-windows-amd64{win_ext}) | "
-    if has_linux:
-        x64_row += f"[x64]({base}-linux-amd64) | "
-    if has_darwin:
-        x64_row += f"[x64]({base}-darwin-amd64) | "
-    if has_freebsd:
-        x64_row += f"[x64]({base}-freebsd-amd64) |"
-    lines.append(x64_row.rstrip(" |"))
+        for platform in platforms:
+            ext = WINDOWS_EXTS.get(arch, "") if platform == "windows" else ""
+            url = f"{base}-{platform}-{arch}{ext}"
+            link = f"[{arch}]({url})"
+            row += f" {link} |"
 
-    arm64_row = "| **ARM64** | "
-    if has_windows:
-        arm64_row += f"[ARM64]({base}-windows-arm64{win_ext}) | "
-    if has_linux:
-        arm64_row += f"[ARM64]({base}-linux-arm64) | "
-    if has_darwin:
-        arm64_row += f"[ARM64]({base}-darwin-arm64) | "
-    if has_freebsd:
-        arm64_row += f"[ARM64]({base}-freebsd-arm64) |"
-    lines.append(arm64_row.rstrip(" |"))
-
-    arm_row = "| **ARM (armv7)** | "
-    if has_windows:
-        arm_row += "不支持 | "
-    if has_linux:
-        arm_row += f"[ARM]({base}-linux-arm) | "
-    if has_darwin:
-        arm_row += "不支持 | "
-    if has_freebsd:
-        arm_row += "不支持 |"
-    lines.append(arm_row.rstrip(" |"))
+        lines.append(row)
 
     return "\n".join(lines)
 
@@ -169,7 +132,11 @@ def main():
         notes.append("## 📥 快速下载\n")
         notes.append(
             generate_download_table(
-                args.repo, args.version, args.binary_name, args.platforms
+                args.repo,
+                args.version,
+                args.binary_name,
+                args.platforms,
+                args.architectures,
             )
         )
         notes.append("")

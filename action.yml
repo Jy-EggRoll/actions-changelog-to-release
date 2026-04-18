@@ -29,6 +29,10 @@ inputs:
     description: 'Comma-separated list of platforms (linux,darwin,windows,freebsd)'
     required: false
     default: 'linux,darwin,windows,freebsd'
+  architectures:
+    description: 'Comma-separated list of architectures (386,amd64,arm,arm64)'
+    required: false
+    default: '386,amd64,arm,arm64'
   include_changelog:
     description: 'Include changelog content in release notes'
     required: false
@@ -67,6 +71,7 @@ outputs:
                 '--binary-name', '${{ inputs.binary_name }}',
                 '--include-download-table', '${{ inputs.include_download_table }}',
                 '--platforms', '${{ inputs.platforms }}',
+                '--architectures', '${{ inputs.architectures }}',
                 '--include-changelog', '${{ inputs.include_changelog }}',
                 '--include-commits', '${{ inputs.include_commits }}',
                 '--include-install-guide', '${{ inputs.include_install_guide }}'],
