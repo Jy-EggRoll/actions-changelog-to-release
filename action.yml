@@ -49,35 +49,38 @@ inputs:
 outputs:
   content:
     description: 'Generated release notes content'
-    runs:
-      using: 'composite'
-      steps:
-        - uses: actions/setup-python@v5
-          with:
-            python-version: '3.11'
-        - name: Generate release notes
-          shell: bash
-          run: |
-            python3 -c "
-            import subprocess
-            import os
+    value: ${{ steps.generate.outputs.content }}
 
-            result = subprocess.run(
-              ['python3', '${{ github.action_path }}/entrypoint.py',
-                '--version', '${{ inputs.version }}',
-                '--previous-tag', '${{ inputs.previous_tag }}',
-                '--changelog-path', '${{ inputs.changelog_path }}',
-                '--repo', '${{ inputs.repo }}',
-                '--binary-name', '${{ inputs.binary_name }}',
-                '--include-download-table', '${{ inputs.include_download_table }}',
-                '--platforms', '${{ inputs.platforms }}',
-                '--architectures', '${{ inputs.architectures }}',
-                '--include-changelog', '${{ inputs.include_changelog }}',
-                '--include-commits', '${{ inputs.include_commits }}',
-                '--include-install-guide', '${{ inputs.include_install_guide }}'],
-              capture_output=True, text=True
-            )
-            print(f'content={result.stdout}', file=open(os.environ['GITHUB_OUTPUT'], 'a'))
-            if result.stderr:
-              print(result.stderr, file=sys.stderr)
-            "
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - id: generate
+      name: Generate release notes
+      shell: bash
+      run: |
+        python3 -c "
+        import subprocess
+        import os
+
+        result = subprocess.run(
+          ['python3', '${{ github.action_path }}/entrypoint.py',
+            '--version', '${{ inputs.version }}',
+            '--previous-tag', '${{ inputs.previous_tag }}',
+            '--changelog-path', '${{ inputs.changelog_path }}',
+            '--repo', '${{ inputs.repo }}',
+            '--binary-name', '${{ inputs.binary_name }}',
+            '--include-download-table', '${{ inputs.include_download_table }}',
+            '--platforms', '${{ inputs.platforms }}',
+            '--architectures', '${{ inputs.architectures }}',
+            '--include-changelog', '${{ inputs.include_changelog }}',
+            '--include-commits', '${{ inputs.include_commits }}',
+            '--include-install-guide', '${{ inputs.include_install_guide }}'],
+          capture_output=True, text=True
+        )
+        print(f'content={result.stdout}', file=open(os.environ['GITHUB_OUTPUT'], 'a'))
+        if result.stderr:
+          print(result.stderr, file=sys.stderr)
+        "
