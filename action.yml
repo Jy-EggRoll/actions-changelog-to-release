@@ -1,5 +1,5 @@
 name: 'Changelog to Release'
-description: 'Generate release notes from CHANGELOG.md with download tables and commit history'
+description: 'Generate release notes from CHANGELOG.md with download tables, commit history and so on'
 author: 'EggRoll'
 
 inputs:
@@ -20,7 +20,7 @@ inputs:
   binary_name:
     description: 'Binary file name'
     required: false
-    default: 'app'
+    default: 'app-name'
   include_download_table:
     description: 'Include download table in release notes'
     required: false
@@ -48,18 +48,31 @@ outputs:
     runs:
       using: 'composite'
       steps:
-        - shell: bash
+        - uses: actions/setup-python@v5
+          with:
+            python-version: '3.11'
+        - name: Generate release notes
+          shell: bash
           run: |
-            echo "content=$(
-              ${{ github.action_path }}/entrypoint.sh \
-                --version '${{ inputs.version }}' \
-                --previous-tag '${{ inputs.previous_tag }}' \
-                --changelog-path '${{ inputs.changelog_path }}' \
-                --repo '${{ inputs.repo }}' \
-                --binary-name '${{ inputs.binary_name }}' \
-                --include-download-table '${{ inputs.include_download_table }}' \
-                --platforms '${{ inputs.platforms }}' \
-                --include-changelog '${{ inputs.include_changelog }}' \
-                --include-commits '${{ inputs.include_commits }}' \
-                --include-install-guide '${{ inputs.include_install_guide }}'
-            )" >> $GITHUB_OUTPUT
+            python3 -c "
+            import subprocess
+            import os
+
+            result = subprocess.run(
+              ['python3', '${{ github.action_path }}/entrypoint.py',
+                '--version', '${{ inputs.version }}',
+                '--previous-tag', '${{ inputs.previous_tag }}',
+                '--changelog-path', '${{ inputs.changelog_path }}',
+                '--repo', '${{ inputs.repo }}',
+                '--binary-name', '${{ inputs.binary_name }}',
+                '--include-download-table', '${{ inputs.include_download_table }}',
+                '--platforms', '${{ inputs.platforms }}',
+                '--include-changelog', '${{ inputs.include_changelog }}',
+                '--include-commits', '${{ inputs.include_commits }}',
+                '--include-install-guide', '${{ inputs.include_install_guide }}'],
+              capture_output=True, text=True
+            )
+            print(f'content={result.stdout}', file=open(os.environ['GITHUB_OUTPUT'], 'a'))
+            if result.stderr:
+              print(result.stderr, file=sys.stderr)
+            "
